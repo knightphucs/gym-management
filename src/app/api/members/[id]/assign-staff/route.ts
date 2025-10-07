@@ -13,7 +13,7 @@ export async function PUT(
 
     const updatedMember = await assignStaffToMember(id, staffId);
     return NextResponse.json(updatedMember, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
       { error: "Failed to update staff" },
       { status: 400 }

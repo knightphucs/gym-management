@@ -172,6 +172,85 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   );
 }
 
+function StaffSelectCell({
+  row,
+  staffList,
+}: {
+  row: any;
+  staffList: StaffDTO[];
+}) {
+  const originalStaff = row.original.created_by || "";
+  const [selectedStaff, setSelectedStaff] = React.useState(originalStaff);
+  const [loading, setLoading] = React.useState(false);
+  const router = useRouter();
+
+  const handleChange = async () => {
+    try {
+      setLoading(true);
+      await fetch(`/api/members/${row.original.id}/assign-staff`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffId: selectedStaff }),
+      });
+      toast.success("Staff updated successfully!");
+      router.refresh();
+    } catch (err) {
+      toast.error("Failed to update staff");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Label htmlFor={`${row.original.id}-staff`} className="sr-only">
+        Reviewer
+      </Label>
+      <Select
+        value={selectedStaff}
+        onValueChange={(value) => {
+          setSelectedStaff(value);
+        }}
+      >
+        <SelectTrigger
+          className="w-38 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
+          size="sm"
+          id={`${row.original.id}-staff`}
+        >
+          <SelectValue placeholder="Assign staff" />
+        </SelectTrigger>
+        <SelectContent align="end">
+          {staffList.map((staff) => (
+            <SelectItem key={staff.id} value={staff.id}>
+              {staff.full_name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {selectedStaff !== originalStaff && (
+        <div className="flex gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            disabled={loading}
+            onClick={handleChange}
+          >
+            <Check className="h-4 w-4 text-green-600" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            disabled={loading}
+            onClick={() => setSelectedStaff(row.original.created_by)}
+          >
+            <X className="h-4 w-4 text-red-600" />
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function DataTable({
   data: initialData,
   staffList,
@@ -356,77 +435,7 @@ export function DataTable({
           return consultantName;
         }
 
-        const originalStaff = row.original.created_by || "";
-        const [selectedStaff, setSelectedStaff] = useState(originalStaff);
-        const [loading, setLoading] = useState(false);
-        const router = useRouter();
-
-        const handleChange = async () => {
-          try {
-            setLoading(true);
-            await fetch(`/api/members/${row.original.id}/assign-staff`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ staffId: selectedStaff }),
-            });
-            toast.success("Staff updated successfully!");
-
-            router.refresh();
-          } catch (err) {
-            toast.error("Failed to update staff");
-          } finally {
-            setLoading(false);
-          }
-        };
-
-        return (
-          <>
-            <Label htmlFor={`${row.original.id}-staff`} className="sr-only">
-              Reviewer
-            </Label>
-            <Select
-              value={selectedStaff}
-              onValueChange={(value) => {
-                setSelectedStaff(value);
-              }}
-            >
-              <SelectTrigger
-                className="w-38 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
-                size="sm"
-                id={`${row.original.id}-staff`}
-              >
-                <SelectValue placeholder="Assign staff" />
-              </SelectTrigger>
-              <SelectContent align="end">
-                {staffList.map((staff) => (
-                  <SelectItem key={staff.id} value={staff.id}>
-                    {staff.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedStaff !== originalStaff && (
-              <div className="flex gap-1">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={loading}
-                  onClick={handleChange}
-                >
-                  <Check className="h-4 w-4 text-green-600" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  disabled={loading}
-                  onClick={() => setSelectedStaff(row.original.created_by)}
-                >
-                  <X className="h-4 w-4 text-red-600" />
-                </Button>
-              </div>
-            )}
-          </>
-        );
+        return <StaffSelectCell row={row} staffList={staffList} />;
       },
     },
     {
