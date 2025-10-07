@@ -176,7 +176,7 @@ function StaffSelectCell({
   row,
   staffList,
 }: {
-  row: any;
+  row: Row<z.infer<typeof schema>>;
   staffList: StaffDTO[];
 }) {
   const originalStaff = row.original.created_by || "";
