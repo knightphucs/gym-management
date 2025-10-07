@@ -102,6 +102,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
+import { StaffDTO } from "@/app/types/staff";
+import { useState } from "react";
+import { Check, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export const schema = z.object({
   id: z.uuid(),
@@ -114,7 +118,14 @@ export const schema = z.object({
   registration_date: z.string(), // ISO date string
   created_by: z.string(),
   is_active: z.boolean(),
+  staff: z
+    .object({
+      full_name: z.string(),
+    })
+    .nullable(),
 });
+
+export type MemberDTO = z.infer<typeof schema>;
 
 // Create a separate component for the drag handle
 function DragHandle({ id }: { id: string }) {
@@ -135,225 +146,6 @@ function DragHandle({ id }: { id: string }) {
     </Button>
   );
 }
-
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "avatar_url",
-    header: "Faceid",
-    cell: ({ row }) => {
-      return row.original.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={row.original.avatar_url}
-          alt={row.original.full_name}
-          className="size-8 rounded-full"
-        />
-      ) : (
-        <div className="size-8 rounded-full bg-muted" />
-      );
-    },
-    enableHiding: false,
-    enableSorting: false,
-  },
-  {
-    accessorKey: "member_code",
-    header: "Member Code",
-    cell: ({ row }) => {
-      return <div className="w-24">{row.original.member_code}</div>;
-    },
-    enableHiding: false,
-  },
-  {
-    accessorKey: "full_name",
-    header: "Full Name",
-    cell: ({ row }) => {
-      return <TableCellViewer item={row.original} />;
-    },
-    enableHiding: false,
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => (
-      <div className="w-32">
-        <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.email ?? "No email"}
-        </Badge>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "is_active",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-muted-foreground px-1.5">
-        {row.original.is_active ? (
-          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
-        ) : (
-          <IconLoader />
-        )}
-        {row.original.is_active ? "Done" : "Pending"}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "phone",
-    header: () => <div className="w-full text-left">Phone Number</div>,
-    cell: ({ row }) => (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.member_code}`,
-            success: "Done",
-            error: "Error",
-          });
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-target`} className="sr-only">
-          Target
-        </Label>
-        <Input
-          className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-32 border-transparent bg-transparent px-0 text-left shadow-none focus-visible:border dark:bg-transparent"
-          defaultValue={row.original.phone ?? "N/A"}
-          id={`${row.original.id}-target`}
-        />
-      </form>
-    ),
-  },
-  {
-    accessorKey: "gender",
-    header: () => <div className="w-full text-left">Gender</div>,
-    cell: ({ row }) => (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Saving ${row.original.member_code}`,
-            success: "Done",
-            error: "Error",
-          });
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-gender`} className="sr-only">
-          Limit
-        </Label>
-        <Input
-          className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-20 border-transparent bg-transparent px-0 text-left shadow-none focus-visible:border dark:bg-transparent"
-          defaultValue={row.original.gender ?? "N/A"}
-          id={`${row.original.id}-gender`}
-        />
-      </form>
-    ),
-  },
-  {
-    accessorKey: "created_by",
-    header: "Consultant",
-    cell: ({ row }) => {
-      const isAssigned =
-        !!row.original.created_by && row.original.created_by !== "Assign staff";
-
-      if (isAssigned) {
-        return row.original.created_by;
-      }
-
-      return (
-        <>
-          <Label htmlFor={`${row.original.id}-staff`} className="sr-only">
-            Reviewer
-          </Label>
-          <Select>
-            <SelectTrigger
-              className="w-38 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
-              size="sm"
-              id={`${row.original.id}-staff`}
-            >
-              <SelectValue placeholder="Assign staff" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
-              <SelectItem value="Jamik Tashpulatov">
-                Jamik Tashpulatov
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </>
-      );
-    },
-  },
-  {
-    accessorKey: "registration_date",
-    header: "Registration Date",
-    cell: ({ row }) => {
-      const date = new Date(row.original.registration_date);
-      return (
-        <time dateTime={row.original.registration_date}>
-          {date.toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })}
-        </time>
-      );
-    },
-    enableHiding: false,
-  },
-  {
-    id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-];
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
@@ -382,8 +174,10 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
 
 export function DataTable({
   data: initialData,
+  staffList,
 }: {
   data: z.infer<typeof schema>[];
+  staffList: StaffDTO[];
 }) {
   const [data, setData] = React.useState(() => initialData);
   const [rowSelection, setRowSelection] = React.useState({});
@@ -408,6 +202,275 @@ export function DataTable({
     () => data?.map(({ id }) => id) || [],
     [data]
   );
+
+  const columns: ColumnDef<z.infer<typeof schema>>[] = [
+    {
+      id: "drag",
+      header: () => null,
+      cell: ({ row }) => <DragHandle id={row.original.id} />,
+    },
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
+            aria-label="Select all"
+          />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "avatar_url",
+      header: "Faceid",
+      cell: ({ row }) => {
+        return row.original.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={row.original.avatar_url}
+            alt={row.original.full_name}
+            className="size-8 rounded-full"
+          />
+        ) : (
+          <div className="size-8 rounded-full bg-muted" />
+        );
+      },
+      enableHiding: false,
+      enableSorting: false,
+    },
+    {
+      accessorKey: "member_code",
+      header: "Member Code",
+      cell: ({ row }) => {
+        return <div className="w-24">{row.original.member_code}</div>;
+      },
+      enableHiding: false,
+    },
+    {
+      accessorKey: "full_name",
+      header: "Full Name",
+      cell: ({ row }) => {
+        return <TableCellViewer item={row.original} staffList={staffList} />;
+      },
+      enableHiding: false,
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => (
+        <div className="w-32">
+          <Badge variant="outline" className="text-muted-foreground px-1.5">
+            {row.original.email ?? "No email"}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "is_active",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          {row.original.is_active ? (
+            <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+          ) : (
+            <IconLoader />
+          )}
+          {row.original.is_active ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "phone",
+      header: () => <div className="w-full text-left">Phone Number</div>,
+      cell: ({ row }) => (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+              loading: `Saving ${row.original.member_code}`,
+              success: "Done",
+              error: "Error",
+            });
+          }}
+        >
+          <Label htmlFor={`${row.original.id}-target`} className="sr-only">
+            Target
+          </Label>
+          <Input
+            className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-32 border-transparent bg-transparent px-0 text-left shadow-none focus-visible:border dark:bg-transparent"
+            defaultValue={row.original.phone ?? "N/A"}
+            id={`${row.original.id}-target`}
+          />
+        </form>
+      ),
+    },
+    {
+      accessorKey: "gender",
+      header: () => <div className="w-full text-left">Gender</div>,
+      cell: ({ row }) => (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+              loading: `Saving ${row.original.member_code}`,
+              success: "Done",
+              error: "Error",
+            });
+          }}
+        >
+          <Label htmlFor={`${row.original.id}-gender`} className="sr-only">
+            Limit
+          </Label>
+          <Input
+            className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-20 border-transparent bg-transparent px-0 text-left shadow-none focus-visible:border dark:bg-transparent"
+            defaultValue={row.original.gender ?? "N/A"}
+            id={`${row.original.id}-gender`}
+          />
+        </form>
+      ),
+    },
+    {
+      accessorKey: "created_by",
+      header: "Consultant",
+      cell: ({ row }) => {
+        const consultantName = row.original.staff?.full_name;
+
+        if (consultantName) {
+          return consultantName;
+        }
+
+        const originalStaff = row.original.created_by || "";
+        const [selectedStaff, setSelectedStaff] = useState(originalStaff);
+        const [loading, setLoading] = useState(false);
+        const router = useRouter();
+
+        const handleChange = async () => {
+          try {
+            setLoading(true);
+            await fetch(`/api/members/${row.original.id}/assign-staff`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ staffId: selectedStaff }),
+            });
+            toast.success("Staff updated successfully!");
+
+            router.refresh();
+          } catch (err) {
+            toast.error("Failed to update staff");
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        return (
+          <>
+            <Label htmlFor={`${row.original.id}-staff`} className="sr-only">
+              Reviewer
+            </Label>
+            <Select
+              value={selectedStaff}
+              onValueChange={(value) => {
+                setSelectedStaff(value);
+              }}
+            >
+              <SelectTrigger
+                className="w-38 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate"
+                size="sm"
+                id={`${row.original.id}-staff`}
+              >
+                <SelectValue placeholder="Assign staff" />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {staffList.map((staff) => (
+                  <SelectItem key={staff.id} value={staff.id}>
+                    {staff.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedStaff !== originalStaff && (
+              <div className="flex gap-1">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  disabled={loading}
+                  onClick={handleChange}
+                >
+                  <Check className="h-4 w-4 text-green-600" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  disabled={loading}
+                  onClick={() => setSelectedStaff(row.original.created_by)}
+                >
+                  <X className="h-4 w-4 text-red-600" />
+                </Button>
+              </div>
+            )}
+          </>
+        );
+      },
+    },
+    {
+      accessorKey: "registration_date",
+      header: "Registration Date",
+      cell: ({ row }) => {
+        const date = new Date(row.original.registration_date);
+        return (
+          <time dateTime={row.original.registration_date}>
+            {date.toLocaleDateString(undefined, {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+          </time>
+        );
+      },
+      enableHiding: false,
+    },
+    {
+      id: "actions",
+      cell: () => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+              size="icon"
+            >
+              <IconDotsVertical />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem>Make a copy</DropdownMenuItem>
+            <DropdownMenuItem>Favorite</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
 
   const table = useReactTable({
     data,
@@ -464,21 +527,21 @@ export function DataTable({
             <SelectValue placeholder="Select a view" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Outline</SelectItem>
-            <SelectItem value="past-performance">Past Performance</SelectItem>
-            <SelectItem value="key-personnel">Key Personnel</SelectItem>
-            <SelectItem value="focus-documents">Focus Documents</SelectItem>
+            <SelectItem value="outline">Active Members</SelectItem>
+            <SelectItem value="personal-trainer">Personal Trainer</SelectItem>
+            <SelectItem value="checkins-tdday">Checkins Today</SelectItem>
+            <SelectItem value="schedule">Schedule</SelectItem>
           </SelectContent>
         </Select>
         <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
-          <TabsTrigger value="outline">Outline</TabsTrigger>
-          <TabsTrigger value="past-performance">
-            Past Performance <Badge variant="secondary">3</Badge>
+          <TabsTrigger value="active-members">Active Members</TabsTrigger>
+          <TabsTrigger value="personal-trainer">
+            Personal Trainer <Badge variant="secondary">3</Badge>
           </TabsTrigger>
-          <TabsTrigger value="key-personnel">
-            Key Personnel <Badge variant="secondary">2</Badge>
+          <TabsTrigger value="checkins-today">
+            Checkins Today <Badge variant="secondary">2</Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents">Focus Documents</TabsTrigger>
+          <TabsTrigger value="schedule">Schedule</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -692,8 +755,15 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+function TableCellViewer({
+  item,
+  staffList,
+}: {
+  item: z.infer<typeof schema>;
+  staffList: StaffDTO[];
+}) {
   const isMobile = useIsMobile();
+  const [assignedStaff, setAssignedStaff] = useState(item.created_by || "");
 
   return (
     <Drawer direction={isMobile ? "bottom" : "right"}>
@@ -816,10 +886,21 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
 
             <div className="flex flex-col gap-3">
               <Label htmlFor="createdBy">Assigned Staff</Label>
-              <Input
-                id="createdBy"
-                defaultValue={item.created_by || "Unassigned"}
-              />
+              <Select
+                value={assignedStaff}
+                onValueChange={(value) => setAssignedStaff(value)}
+              >
+                <SelectTrigger id="createdBy" className="w-full">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffList.map((staff) => (
+                    <SelectItem key={staff.id} value={staff.id}>
+                      {staff.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex flex-col gap-3">

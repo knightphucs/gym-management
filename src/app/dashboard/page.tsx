@@ -1,10 +1,40 @@
+"use client";
+
 import { ChartAreaInteractive } from "@/components/dashboard/chart-area-interactive";
 import { DataTable } from "@/components/dashboard/data-table";
 import { SectionCards } from "@/components/dashboard/section-cards";
-import data from "./data.json";
+import { useEffect, useState } from "react";
+import { MemberDTO } from "../types/member";
+import { StaffDTO } from "../types/staff";
 
-// app/dashboard/page.tsx
 export default function Page() {
+  const [members, setMembers] = useState<MemberDTO[]>([]);
+  const [staffList, setStaffList] = useState<StaffDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        const [memberRes, staffRes] = await Promise.all([
+          fetch("/api/members"),
+          fetch("/api/staff"),
+        ]);
+        const membersData = await memberRes.json();
+        const staffData = await staffRes.json();
+
+        setMembers(membersData);
+        setStaffList(staffData);
+      } catch (err) {
+        console.error("Error fetching members:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMembers();
+  }, []);
+
+  if (loading) return <p>Loading...</p>;
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
@@ -13,7 +43,7 @@ export default function Page() {
           <div className="px-4 lg:px-6">
             <ChartAreaInteractive />
           </div>
-          <DataTable data={data} />
+          <DataTable data={members} staffList={staffList} />
         </div>
       </div>
     </div>
