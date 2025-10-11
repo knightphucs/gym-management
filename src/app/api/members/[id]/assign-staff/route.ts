@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { assignStaffToMember } from "@/lib/actions/member";
 
 export async function PUT(
@@ -13,7 +12,7 @@ export async function PUT(
 
     const updatedMember = await assignStaffToMember(id, staffId);
     return NextResponse.json(updatedMember, { status: 200 });
-  } catch (err: unknown) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to update staff" },
       { status: 400 }

@@ -100,8 +100,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 import { StaffDTO } from "@/app/types/staff";
 import { useState } from "react";
 import { Check, X } from "lucide-react";
@@ -194,7 +192,7 @@ function StaffSelectCell({
       });
       toast.success("Staff updated successfully!");
       router.refresh();
-    } catch (err) {
+    } catch {
       toast.error("Failed to update staff");
     } finally {
       setLoading(false);

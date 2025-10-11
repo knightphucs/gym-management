@@ -7,7 +7,7 @@ export async function GET() {
     const staff = await getStaffNames();
 
     return NextResponse.json(staff);
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch staff" },
       { status: 400 }

@@ -8,7 +8,7 @@ export async function assignStaffToMember(memberId: string, staffId: string) {
   try {
     const updated = await updatedMember(memberId, staffId);
     return updated;
-  } catch (err) {
+  } catch {
     throw new Error("Failed to update staff");
   }
 }
